@@ -1,0 +1,2 @@
+ALTER TABLE "products_prices" DROP CONSTRAINT "check_date_range";--> statement-breakpoint
+ALTER TABLE "products_prices" ADD CONSTRAINT "check_date_range" CHECK ("products_prices"."fromDate" <= "products_prices"."toDate");

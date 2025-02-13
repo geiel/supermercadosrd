@@ -1,9 +1,10 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
+  check,
+  date,
   integer,
   numeric,
   pgTable,
-  primaryKey,
   varchar,
 } from "drizzle-orm/pg-core";
 
@@ -31,6 +32,7 @@ export const supermarketRelations = relations(supermarkets, ({ many }) => ({
 export const productPrices = pgTable(
   "products_prices",
   {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
     productId: integer()
       .references(() => products.id)
       .notNull(),
@@ -38,8 +40,12 @@ export const productPrices = pgTable(
       .references(() => supermarkets.id)
       .notNull(),
     price: numeric().notNull(),
+    fromDate: date({ mode: "date" }).notNull(),
+    toDate: date({ mode: "date" }).notNull(),
   },
-  (table) => [primaryKey({ columns: [table.productId, table.supermarketId] })]
+  (table) => [
+    check("check_date_range", sql`${table.fromDate} <= ${table.toDate}`),
+  ]
 );
 
 export const productPricesRelations = relations(productPrices, ({ one }) => ({

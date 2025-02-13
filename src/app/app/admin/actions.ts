@@ -3,7 +3,7 @@
 import { db } from "@/db/drizzle";
 import { productPrices, products } from "@/db/schema";
 import { getPrices, getProducts } from "@/lib/micm-api";
-import { sql } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 
 export async function updateMICMProducts() {
   const micmProducts = await getProducts();
@@ -24,13 +24,22 @@ export async function updateMICMProducts() {
 }
 
 export async function setPrices() {
-  const prices = await getPrices();
+  const { productPricesToAdd, productPricesToUpdate } = await getPrices();
+
+  console.log("Added " + productPricesToAdd.length);
+  console.log("Updated " + productPricesToUpdate.length);
+
+  if (productPricesToAdd.length > 0) {
+    await db
+      .insert(productPrices)
+      .values(productPricesToAdd)
+      .onConflictDoNothing();
+  }
 
   await db
-    .insert(productPrices)
-    .values(prices)
-    .onConflictDoUpdate({
-      target: [productPrices.productId, productPrices.supermarketId],
-      set: { price: sql`excluded.price` },
-    });
+    .update(productPrices)
+    .set({
+      toDate: new Date(),
+    })
+    .where(inArray(productPrices.id, productPricesToUpdate));
 }

@@ -1,5 +1,6 @@
 import { db } from "@/db/drizzle";
-import { ProductPricesInsert } from "@/db/schema";
+import { ProductPricesInsert, products } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 function convertToValidImageString(img: string | null) {
@@ -49,10 +50,19 @@ export async function getProducts() {
   return [];
 }
 
-export async function getPrices(): Promise<ProductPricesInsert[]> {
-  const products = await db.query.products.findMany();
+export async function getPrices() {
+  const products = await db.query.products.findMany({
+    with: {
+      prices: {
+        with: {
+          supermarket: true,
+        },
+      },
+    },
+  });
   const supermarkets = await db.query.supermarkets.findMany();
-  const productPrices: ProductPricesInsert[] = [];
+  const productPricesToAdd: ProductPricesInsert[] = [];
+  const productPricesToUpdate: number[] = [];
 
   for (let i = 0; i < products.length; i++) {
     const micmId = products[i].micmId;
@@ -63,6 +73,10 @@ export async function getPrices(): Promise<ProductPricesInsert[]> {
 
     const supermarketPrice = prices.find((price) => price.type === 1);
     if (!supermarketPrice) {
+      console.log(
+        "eliminar id: " + products[i].id + " nombre: " + products[i].name
+      );
+      await deleteProduct(products[i].id);
       continue;
     }
 
@@ -72,28 +86,60 @@ export async function getPrices(): Promise<ProductPricesInsert[]> {
       );
 
       if (!smPrice) {
-        console.log(price + " no existe");
         return;
       }
 
-      productPrices.push({
-        productId: products[i].id,
-        supermarketId: smPrice.id,
-        price: price.price + "",
-      });
+      if (!products[i].prices) {
+        productPricesToAdd.push({
+          productId: products[i].id,
+          supermarketId: smPrice.id,
+          price: price.price + "",
+          fromDate: new Date(),
+          toDate: new Date(),
+        });
+        return;
+      }
+
+      const existingProductPrice = products[i].prices.find(
+        (proPrice) => proPrice.supermarket.name === price.name
+      );
+
+      if (!existingProductPrice) {
+        productPricesToAdd.push({
+          productId: products[i].id,
+          supermarketId: smPrice.id,
+          price: price.price + "",
+          fromDate: new Date(),
+          toDate: new Date(),
+        });
+        return;
+      }
+
+      if (Number(existingProductPrice.price) !== price.price) {
+        productPricesToAdd.push({
+          productId: products[i].id,
+          supermarketId: smPrice.id,
+          price: price.price + "",
+          fromDate: new Date(),
+          toDate: new Date(),
+        });
+        return;
+      }
+
+      productPricesToUpdate.push(existingProductPrice.id);
     });
   }
 
-  return productPrices;
+  return { productPricesToAdd, productPricesToUpdate };
 }
 
-async function getPricesByProductId(productId: number) {
+async function getPricesByProductId(micmId: number) {
   try {
     console.log(
-      `fetch https://preciosjustos.micm.gob.do/api/productos/${productId}`
+      `fetch https://preciosjustos.micm.gob.do/api/productos/${micmId}`
     );
     const data = await fetch(
-      `https://preciosjustos.micm.gob.do/api/productos/${productId}`,
+      `https://preciosjustos.micm.gob.do/api/productos/${micmId}`,
       {
         headers: {
           referer: "https://preciosjustos.micm.gob.do/",
@@ -121,4 +167,8 @@ async function getPricesByProductId(productId: number) {
   }
 
   return [];
+}
+
+async function deleteProduct(productId: number) {
+  await db.delete(products).where(eq(products.id, productId));
 }
