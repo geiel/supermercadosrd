@@ -1,6 +1,8 @@
 import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { db } from "@/db/drizzle";
+import { SupermarketProductUrlSelect } from "@/db/schema";
 import Image from "next/image";
 
 const bucketUrl =
@@ -18,6 +20,7 @@ export default async function Page({
       prices: {
         with: {
           supermarket: true,
+          url: true,
         },
         orderBy: (products, { asc }) => [asc(products.price)],
       },
@@ -29,7 +32,7 @@ export default async function Page({
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 py-10">
+    <div className="flex flex-1 flex-col gap-4 py-10 px-4">
       <div className="mx-auto w-full max-w-screen-2xl">
         <div className="flex flex-row">
           <div className="basis-1/2 lg:px-8 px-2">
@@ -42,12 +45,12 @@ export default async function Page({
               </div>
             </div>
 
-            <div className="aspect-square rounded-xl bg-muted flex justify-center items-center my-2">
+            <div className="aspect-square rounded-xl flex justify-center items-center my-2">
               <Image
                 src={new URL(`${bucketUrl}/${product.image}`).toString()}
                 alt={product.name}
-                width={300}
-                height={300}
+                width={500}
+                height={500}
                 priority={false}
               />
             </div>
@@ -59,11 +62,16 @@ export default async function Page({
             <div>
               {product.prices.map((price, key) => (
                 <div key={key}>
-                  <div className="grid grid-cols-2 content-center items-center">
+                  <div className="grid grid-cols-3 content-center items-center">
                     <div className="flex items-center h-11">
                       <SupermarketLogo name={price.supermarket.name} />
                     </div>
-                    <div className="font-bold">RD${price.price}</div>
+                    <div className="justify-self-end">
+                      <div className="font-bold">RD${price.price}</div>
+                    </div>
+                    <div className="justify-self-end">
+                      <VisitSupermarketButton url={price.url} />
+                    </div>
                   </div>
                   <Separator className="my-2" />
                 </div>
@@ -73,6 +81,23 @@ export default async function Page({
         </div>
       </div>
     </div>
+  );
+}
+
+function VisitSupermarketButton({ url }: { url: SupermarketProductUrlSelect }) {
+  if (!url) {
+    return <Button disabled={true}>Visitar</Button>;
+  }
+
+  return (
+    <a
+      href={url.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={buttonVariants({ variant: "default" })}
+    >
+      Visitar
+    </a>
   );
 }
 

@@ -57,9 +57,43 @@ export const productPricesRelations = relations(productPrices, ({ one }) => ({
     fields: [productPrices.supermarketId],
     references: [supermarkets.id],
   }),
+  url: one(supermarketProductsUrls, {
+    fields: [productPrices.supermarketId, productPrices.productId],
+    references: [
+      supermarketProductsUrls.supermarketId,
+      supermarketProductsUrls.productId,
+    ],
+  }),
 }));
+
+export const supermarketProductsUrls = pgTable("supermarket_products_urls", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  productId: integer()
+    .references(() => products.id)
+    .notNull(),
+  supermarketId: integer()
+    .references(() => supermarkets.id)
+    .notNull(),
+  url: varchar({ length: 255 }).notNull(),
+});
+
+export const supermarketProductsUrlsRelations = relations(
+  supermarketProductsUrls,
+  ({ one }) => ({
+    product: one(products, {
+      fields: [supermarketProductsUrls.productId],
+      references: [products.id],
+    }),
+    supermarket: one(supermarkets, {
+      fields: [supermarketProductsUrls.supermarketId],
+      references: [supermarkets.id],
+    }),
+  })
+);
 
 export type SelectProduct = typeof products.$inferSelect;
 
 export type ProductPricesInsert = typeof productPrices.$inferInsert;
 export type ProductPricesSelect = typeof productPrices.$inferSelect;
+export type SupermarketProductUrlSelect =
+  typeof supermarketProductsUrls.$inferSelect;

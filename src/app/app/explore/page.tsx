@@ -19,16 +19,16 @@ export default async function Page() {
   const products = await selectProducts();
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4">
+    <div className="flex flex-1 flex-col p-3 bg-muted">
       <div className="mx-auto w-full max-w-7xl">
-        <div className="grid auto-rows-min gap-4 md:grid-cols-5">
+        <div className="grid auto-rows-min gap-3 md:grid-cols-3 lg:grid-cols-4">
           {products.map((product, i) => (
             <Link
               key={i}
               href={`/app/product/${product.id}`}
-              className="flex flex-col gap-2"
+              className="flex flex-col gap-2 bg-white p-2 rounded-md"
             >
-              <div className="aspect-square rounded-xl bg-muted flex justify-center items-center">
+              <div className="aspect-square rounded-xl flex justify-center items-center">
                 <Image
                   src={new URL(`${bucketUrl}/${product.image}`).toString()}
                   alt={product.name}
@@ -40,7 +40,7 @@ export default async function Page() {
               <div>
                 <Badge>{product.unit}</Badge>
               </div>
-              <div>{product.name}</div>
+              <p className="leading-6">{product.name}</p>
               <div className="font-bold text-2xl">
                 <ProductPrice prices={product.prices} />
               </div>
