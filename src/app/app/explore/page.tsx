@@ -26,7 +26,7 @@ export default async function Page() {
             <Link
               key={i}
               href={`/app/product/${product.id}`}
-              className="flex flex-col gap-2 bg-white p-2 rounded-md"
+              className="flex flex-col gap-2 bg-white p-4 rounded-md"
             >
               <div className="aspect-square rounded-xl flex justify-center items-center">
                 <Image
