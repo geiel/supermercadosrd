@@ -3,6 +3,7 @@
 import { db } from "@/db/drizzle";
 import { productPrices, products } from "@/db/schema";
 import { getPrices, getProducts } from "@/lib/micm-api";
+import { getSirenaPrice } from "@/lib/scrappers/sirena";
 import { inArray, sql } from "drizzle-orm";
 
 export async function updateMICMProducts() {
@@ -42,4 +43,8 @@ export async function setPrices() {
       toDate: new Date(),
     })
     .where(inArray(productPrices.id, productPricesToUpdate));
+}
+
+export async function loadSupermaketsPrices() {
+  await getSirenaPrice();
 }

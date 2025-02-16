@@ -55,7 +55,7 @@ export default async function Page({
               />
             </div>
           </div>
-          <div className="basis-1/2 flex flex-col gap-8">
+          <div className="basis-1/2 flex flex-col gap-8 px-2">
             <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight">
               Donde Comprar
             </h3>
@@ -85,7 +85,7 @@ export default async function Page({
 }
 
 function VisitSupermarketButton({ url }: { url: SupermarketProductUrlSelect }) {
-  if (!url) {
+  if (!url || url.supermarketId === 4) {
     return <Button disabled={true}>Visitar</Button>;
   }
 
