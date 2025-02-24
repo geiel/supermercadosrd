@@ -2,9 +2,9 @@ import { db } from "@/db/drizzle";
 import { ProductPricesInsert } from "@/db/schema";
 import puppeteer from "puppeteer";
 
-const SUPERMARKET_ID = 2;
+const SUPERMARKET_ID = 6;
 
-export async function getSirenaPrice() {
+export async function getJumboPrice() {
   const browser = await puppeteer.launch();
   const page = await browser.newPage();
 
@@ -31,36 +31,50 @@ export async function getSirenaPrice() {
 
   for (const supermarketProductsUrl of urls) {
     console.log(
-      `PROCESING SIRENA ID: ${supermarketProductsUrl.product.id} NAME: ${supermarketProductsUrl.product.name}`
+      `PROCESING JUMBO ID: ${supermarketProductsUrl.product.id} NAME: ${supermarketProductsUrl.product.name}`
     );
-    await page.goto(supermarketProductsUrl.url, { waitUntil: "networkidle2" });
 
-    const prices = await page.evaluate(() => {
-      return document.querySelector(".item-product-price")?.textContent;
+    const response = await fetch(supermarketProductsUrl.url);
+    const html = await response.text();
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
+
+    const specialPrice = await page.evaluate(() => {
+      return document.querySelector(".special-price")?.textContent;
+    });
+    const oldPrice = await page.evaluate(() => {
+      return document.querySelector(".price")?.textContent;
+    });
+    const oldPrice2 = await page.evaluate(() => {
+      return document.querySelector(".product-purchase-price")?.textContent;
     });
 
-    if (!prices) {
+    const finalPrice = specialPrice ?? oldPrice ?? oldPrice2;
+
+    if (!finalPrice) {
       console.log(
-        "Sirena price of the url " +
+        "Nacional price of the url " +
           supermarketProductsUrl.url +
           " was not found"
       );
       continue;
     }
 
-    const originalPrice = prices.split("$")[1];
+    const cleanPrice = finalPrice
+      .trim()
+      .replaceAll("RD$", "")
+      .replaceAll(",", "");
     if (
-      Number(originalPrice.replaceAll(",", "")) !==
+      Number(cleanPrice) !==
       Number(supermarketProductsUrl.product.prices[0].price)
     ) {
       console.log(
-        `Product ${supermarketProductsUrl.product.name}: original: ${originalPrice}, actual: ${supermarketProductsUrl.product.prices[0].price}`
+        `Product ${supermarketProductsUrl.product.name}: original: ${cleanPrice}, actual: ${supermarketProductsUrl.product.prices[0].price}`
       );
 
       productPricesToAdd.push({
         productId: supermarketProductsUrl.productId,
         supermarketId: supermarketProductsUrl.supermarketId,
-        price: originalPrice,
+        price: cleanPrice,
         fromDate: new Date(),
         toDate: new Date(),
       });

@@ -22,7 +22,6 @@ export default async function Page({
           supermarket: true,
           url: true,
         },
-        orderBy: (products, { asc }) => [asc(products.price)],
       },
     },
   });
@@ -30,6 +29,20 @@ export default async function Page({
   if (!product) {
     return <div>Producto no encontrado</div>;
   }
+
+  type ProductPriceSelect = (typeof product.prices)[0];
+  const uniquePrices = Object.values(
+    product.prices.reduce<Record<number, ProductPriceSelect>>((acc, price) => {
+      if (
+        !acc[price.supermarketId] ||
+        price.fromDate > acc[price.supermarketId].fromDate
+      ) {
+        acc[price.supermarketId] = price;
+      }
+
+      return acc;
+    }, {})
+  ).sort((a, b) => Number(a.price) - Number(b.price));
 
   return (
     <div className="flex flex-1 flex-col gap-4 py-10 px-4">
@@ -60,7 +73,7 @@ export default async function Page({
               Donde Comprar
             </h3>
             <div>
-              {product.prices.map((price, key) => (
+              {uniquePrices.map((price, key) => (
                 <div key={key}>
                   <div className="grid grid-cols-3 content-center items-center">
                     <div className="flex items-center h-11">
